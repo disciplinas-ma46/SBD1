@@ -1,0 +1,189 @@
+-- --------     << TF1 >>     ------------
+-- 
+--                    SCRIPT DE CRIACAO (DDL)
+-- 
+-- Data Criacao ...........: 02/07/2019
+-- Autor(es) ..............: Andre Lucas de Sousa Pinto 17/0068251
+-- ........................: Marcelo Araújo dos Santos 16/0035481
+-- ........................: Felipe Campos de Almeida 16/0119553
+-- ........................: Eliseu Egewarth 12/0029693
+-- Banco de Dados .........: MySQL
+-- Base de Dados(nome) ....: TF1C
+-- 
+-- Data Ultima Alteracao ..: 03/07/2019
+--   => Adicao da tabela PAGAMENTO
+--   => Mudanca no nome da database para TF1C
+-- 
+-- PROJETO => 01 Base de Dados
+--         => 15 Tabelas
+-- 
+-- -----------------------------------------------------------------
+
+CREATE DATABASE IF NOT EXISTS TF1C;
+
+USE TF1C;
+
+CREATE TABLE EMPRESA (
+	cnpj BIGINT(14) NOT NULL,
+	email VARCHAR(100) NOT NULL,
+	nomeFantasia VARCHAR(100) NOT NULL,
+	numero INT NOT NULL,
+	bairro VARCHAR(100) NOT NULL,
+	cep INT(8) NOT NULL,
+	logradouro VARCHAR(100) NOT NULL,
+	uf VARCHAR(2) NOT NULL,
+	complemento VARCHAR(100),
+	municipio VARCHAR(100) NOT NULL,
+	inscricaoEstadual BIGINT(10) NOT NULL,
+	razaoSocial VARCHAR(100) NOT NULL,
+	CONSTRAINT EMPRESA_PK PRIMARY KEY (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE telefone (
+	telefone BIGINT(12) NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	CONSTRAINT telefone_PK PRIMARY KEY (telefone, cnpj),
+	CONSTRAINT telefone_EMPRESA_FK FOREIGN KEY (cnpj) REFERENCES EMPRESA (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE CLIENTE (
+	dtCadastro DATE NOT NULL,
+	statusCliente ENUM('I','A') NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	dtProximaVisita DATE,
+	CONSTRAINT CLIENTE_PK PRIMARY KEY (cnpj),
+	CONSTRAINT CLIENTE_EMPRESA_FK FOREIGN KEY (cnpj) REFERENCES EMPRESA (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE REPRESENTANTE (
+	core INT(7) NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	CONSTRAINT REPRESENTANTE_PK PRIMARY KEY (cnpj),
+	CONSTRAINT REPRESENTANTE_EMPRESA_FK FOREIGN KEY (cnpj) REFERENCES EMPRESA (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE FORNECEDOR (
+	statusFornecedor ENUM('I','A') NOT NULL,
+	cnpjFornecedor BIGINT(14) NOT NULL,
+	cnpjRepresentante BIGINT(14) NOT NULL,
+	dtInicio DATE NOT NULL,
+	CONSTRAINT FORNECEDOR_PK PRIMARY KEY (cnpjFornecedor),
+	CONSTRAINT FORNECEDOR_EMPRESA_FK FOREIGN KEY (cnpjFornecedor) REFERENCES EMPRESA (cnpj),
+	CONSTRAINT FORNECEDOR_REPRESENTANTE_FK FOREIGN KEY (cnpjRepresentante) REFERENCES REPRESENTANTE (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE regiaoAtuacao (
+	regiaoAtuacao VARCHAR(100) NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	CONSTRAINT regiaoAtuacao_PK PRIMARY KEY (regiaoAtuacao, cnpj),
+	CONSTRAINT regiaoAtuacao_FORNECEDOR_FK FOREIGN KEY (cnpj) REFERENCES FORNECEDOR (cnpjFornecedor)
+)ENGINE = InnoDB;
+
+CREATE TABLE CATEGORIA (
+	idCategoria INT NOT NULL AUTO_INCREMENT,
+	nomeCategoria VARCHAR(100) NOT NULL,
+	descricao VARCHAR(100),
+	CONSTRAINT CATEGORIA_PK PRIMARY KEY (idCategoria)
+)ENGINE = InnoDB AUTO_INCREMENT = 1;
+
+CREATE TABLE PRODUTO (
+	idProduto INT NOT NULL AUTO_INCREMENT,
+	preco DECIMAL(7,2) NOT NULL,
+	nome VARCHAR(100) NOT NULL,
+	qtdMinima INT NOT NULL,
+	txComissao INT(2) NOT NULL,
+	metaVenda INT NOT NULL,
+	comissaoExtra INT(3) NOT NULL,
+	statusProduto ENUM('I','A') NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	idCategoria INT NOT NULL,
+	descricao VARCHAR(100),
+	CONSTRAINT PRODUTO_PK PRIMARY KEY (idProduto),
+	CONSTRAINT PRODUTO_FORNECEDOR_FK FOREIGN KEY (cnpj) REFERENCES FORNECEDOR (cnpjFornecedor),
+	CONSTRAINT PRODUTO_CATEGORIA_FK FOREIGN KEY (idCategoria) REFERENCES CATEGORIA (idCategoria)
+)ENGINE = InnoDB AUTO_INCREMENT = 1;
+
+CREATE TABLE estoca (
+	idProduto INT NOT NULL,
+	cnpj BIGINT(14) NOT NULL,
+	quantidade INT NOT NULL,
+	dtEstoque DATE NOT NULL,
+	comentario VARCHAR(255),
+	CONSTRAINT estoca_PK PRIMARY KEY (idProduto, cnpj, dtEstoque),
+	CONSTRAINT estoca_PRODUTO_FK FOREIGN KEY (idProduto) REFERENCES PRODUTO (idProduto),
+	CONSTRAINT estoca_CLIENTE_FK FOREIGN KEY (cnpj) REFERENCES CLIENTE (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE credita (
+	cnpjCliente BIGINT(14) NOT NULL,
+	cnpjFornecedor BIGINT(14) NOT NULL,
+	credito DECIMAL(8,2) NOT NULL,
+	CONSTRAINT credita_PK PRIMARY KEY (cnpjCliente, cnpjFornecedor),
+	CONSTRAINT credita_FORNECEDOR_FK FOREIGN KEY (cnpjFornecedor) REFERENCES FORNECEDOR (cnpjFornecedor),
+	CONSTRAINT credita_CLIENTE_FK FOREIGN KEY (cnpjCliente) REFERENCES CLIENTE (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE FUNCIONARIO (
+	numero INT NOT NULL,
+	bairro VARCHAR(100) NOT NULL,
+	cep INT(9) NOT NULL,
+	logradouro VARCHAR(100) NOT NULL,
+	uf VARCHAR(2) NOT NULL,
+	complemento VARCHAR(100) NOT NULL,
+	municipio VARCHAR(100) NOT NULL,
+	telefone BIGINT(12) NOT NULL,
+	dtNascimento DATE NOT NULL,
+	salario DECIMAL(7,2) NOT NULL,
+	nome VARCHAR(100) NOT NULL,
+	cpf BIGINT(11) NOT NULL,
+	dtContratacao DATE NOT NULL,
+	dtDemissao DATE,
+	cnpj BIGINT(14) NOT NULL,
+	CONSTRAINT FUNCIONARIO_PK PRIMARY KEY (cpf, dtContratacao),
+	CONSTRAINT FUNCIONARIO_REPRESENTANTE_FK FOREIGN KEY (cnpj) REFERENCES REPRESENTANTE (cnpj)
+)ENGINE = InnoDB;
+
+CREATE TABLE ATENDIMENTO (
+	idAtendimento INT NOT NULL AUTO_INCREMENT,
+	dtVisita DATE NOT NULL,
+	comentario VARCHAR(500) NOT NULL,
+	tipo ENUM('P','V') NOT NULL,
+	cnpjRepresentante BIGINT(14) NOT NULL,
+	cnpjCliente BIGINT(14) NOT NULL,
+	CONSTRAINT ATENDIMENTO_PK PRIMARY KEY (idAtendimento),
+	CONSTRAINT ATENDIMENTO_REPRESENTANTE_FK FOREIGN KEY (cnpjRepresentante) REFERENCES REPRESENTANTE (cnpj),
+	CONSTRAINT ATENDIMENTO_CLIENTE_FK FOREIGN KEY (cnpjCliente) REFERENCES CLIENTE (cnpj)
+)ENGINE = InnoDB AUTO_INCREMENT = 1;
+
+CREATE TABLE PEDIDO (
+	qtdParcelas INT NOT NULL,
+	idPedido INT NOT NULL AUTO_INCREMENT,
+	dtPedido DATE NOT NULL,
+	statusPedido ENUM('cancelado','pendente','concluido') NOT NULL,
+	idAtendimento INT NOT NULL,
+	CONSTRAINT PEDIDO_PK PRIMARY KEY (idPedido),
+	CONSTRAINT PEDIDO_ATENDIMENTO_FK FOREIGN KEY (idAtendimento) REFERENCES ATENDIMENTO (idAtendimento)
+)ENGINE = InnoDB AUTO_INCREMENT = 1;
+
+CREATE TABLE contem (
+	idPedido INT NOT NULL,
+	idProduto INT NOT NULL,
+	quantidade INT NOT NULL,
+	desconto INT(3) NOT NULL,
+	precoUnitario DECIMAL(7,2) NOT NULL,
+	CONSTRAINT contem_PK PRIMARY KEY (idPedido, idProduto),
+	CONSTRAINT contem_PEDIDO_FK FOREIGN KEY (idPedido) REFERENCES PEDIDO (idPedido),
+	CONSTRAINT contem_PRODUTO_FK FOREIGN KEY (idProduto) REFERENCES PRODUTO (idProduto)
+)ENGINE = InnoDB;
+
+CREATE TABLE PAGAMENTO (
+	idPagamento INT NOT NULL AUTO_INCREMENT,
+	idPedido INT NOT NULL,
+	numeroParcela INT NOT NULL,
+	dtVencimentoPagamento DATE NOT NULL,
+	dtPagamento DATE,
+	valor DECIMAL(8,2) NOT NULL,
+	CONSTRAINT PAGAMENTO_PK PRIMARY KEY (idPagamento),
+	CONSTRAINT PAGAMENTO_PEDIDO_FK FOREIGN KEY (idPedido) REFERENCES PEDIDO (idPedido)
+)ENGINE = InnoDB AUTO_INCREMENT = 1;
+
